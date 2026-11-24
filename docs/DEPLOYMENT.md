@@ -1,6 +1,6 @@
 # SAYNTRA deployment plan: secure development preview
 
-Status (5 November 2026): **not deployed.** Local Git repository initialised with one commit on `main`; no remote, nothing pushed. Every external step below needs the owner's explicit approval because it creates accounts, billable resources or public URLs.
+Status (November 2026): the **portfolio demo** is deployed at https://sayntra.vercel.app (Vercel project `sayntra`, root `frontend`, `NEXT_PUBLIC_DEMO_MODE=true`, `NEXT_PUBLIC_DEPLOY_STAGE=demo`). It needs no backend or secrets. The source is public at https://github.com/Youssef-Elalfy/sayntra. The **full application below (Laravel + MySQL) is not deployed.** Every external step needs the owner's explicit approval because it creates accounts, billable resources or public URLs.
 
 ## Target architecture
 

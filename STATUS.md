@@ -4,7 +4,7 @@ Checkpoint: **27 October 2026**. This file describes the actual contents of this
 
 ## Implemented
 
-- Laravel 13.38.0 / PHP 8.3+, Sanctum 4.3.3, Next.js 16.4.3 / React / strict TypeScript.
+- Laravel 13.38.0 / PHP 8.3+, Sanctum 4.3.3, Next.js 16.4.6 / React 19 / strict TypeScript.
 - MySQL migrations, scoped organization ownership, role gates, repair policies, audit records and relational constraints.
 - Cookie session registration/login/logout, recovery, verification, profile/password endpoints and matching UI.
 - Bilingual marketing/auth screens, themed workspace, original SVG monogram, Inter/Tajawal fonts, reduced-motion-aware animation.
@@ -13,6 +13,8 @@ Checkpoint: **27 October 2026**. This file describes the actual contents of this
 - Team invitations, hashed expiring tokens, invitation acceptance, membership role/activation management; last active owner and active technician assignments protected.
 - Dashboard real repair/customer counts; technician access limited to assigned repairs.
 - **5 Nov 2026:** original procedural 3D smartphone (Three.js / React Three Fiber / Drei) in the landing hero and a scroll-driven "Follow one repair" story section, with RTL mirroring, render tiers, reduced-motion and no-WebGL fallbacks. See `docs/3D_EXPERIENCE.md`.
+
+- **November 2026:** portfolio demo mode (`/demo`, `src/lib/demo.ts`): an in-browser backend with a fictional, bilingual seed (24 repairs, 14 customers, 18 devices, 5 team members), the same response shapes and transition map as Laravel, and simulated customer approval and delivery so the whole journey can be explored. Account pages explain the demo in the public build.
 
 ## Tested
 
@@ -38,7 +40,8 @@ Roles for inventory/accounting are defined for future modules, but those modules
 
 ## Deployment
 
-**Not deployed.** Deployment notes prepare a future staging environment; they are not evidence of a deployment or a completed security certification.
+- **Portfolio demo: deployed** at https://sayntra.vercel.app (Vercel, built from `frontend/` with `NEXT_PUBLIC_DEMO_MODE=true`). It runs entirely in the browser with fictional data and does not call any backend.
+- **Laravel API and MySQL: not deployed.** `docs/DEPLOYMENT.md` prepares a future environment; it is not evidence of a production deployment or a security certification.
 
 ## Continuation priority
 

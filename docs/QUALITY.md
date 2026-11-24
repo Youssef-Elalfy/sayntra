@@ -90,3 +90,16 @@ Agent reviews actually run: `senior-ui-ux-designer` (review only) and `frontend-
 | Git | Repository initialised, first commit `d964252` on `main`; `.env*` (except examples), `.env.e2e.local`, `.claude/`, logs, dependencies and build output excluded; staged content scanned for secrets (none found). No remote, nothing pushed. |
 
 Agent reviews used this phase: `senior-game-developer` (3D rendering) and `senior-motion-video-producer` (motion), both review-only; their findings were implemented by the main session.
+
+## Update: portfolio demo and Vercel deployment (November 2026)
+
+| Check | Result |
+|---|---|
+| Next.js | Upgraded 16.4.3 → 16.4.6 after the older release stopped the build with a security error |
+| `npm audit` (frontend) | 7 moderate development-only advisories (minimatch via typescript-eslint) fixed with `npm audit fix` (no `--force`): **0 vulnerabilities** |
+| `npm run typecheck`, `npm run lint`, `npm run build` (demo build) | Passed |
+| `demo.spec.ts` + `experience-3d.spec.ts` against https://sayntra.vercel.app (`E2E_BASE_URL`, `E2E_DEMO_BUILD=1`, Chrome) | **9 passed**. Includes: no request to `/api`, `/sanctum` or port 8000 while browsing the demo; no console errors; search, filter, a status transition persisted across reload; customer creation and reset; Arabic RTL, dark theme and 390 px fit |
+| Text contrast over the animated background, en/ar × light/dark × 3 animation frames (32 measurements) | Lowest ratio **5.88 : 1** |
+| Repository security review before publishing | No credentials, keys, dumps or logs in any commit; only `.env.example` files with blank values tracked; demo data fictional (reserved example domains, `+20 10 5555 …` numbers). Commit author email changed to the GitHub no-reply address before the first push. |
+
+The Laravel test suite was not re-run in this phase (still blocked locally by the `sayntra_test` privilege); CI runs it against MySQL 8.4. Not verified: Safari, Firefox, physical phones.
