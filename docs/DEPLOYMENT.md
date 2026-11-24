@@ -1,48 +1,58 @@
-# Staging deployment preparation
+# SAYNTRA deployment plan: secure development preview
 
-**This archive is not production-ready and has not been deployed.** The following is deployment preparation for the current development checkpoint.
+Status (5 November 2026): **not deployed.** Local Git repository initialised with one commit on `main`; no remote, nothing pushed. Every external step below needs the owner's explicit approval because it creates accounts, billable resources or public URLs.
 
-## Separate services
+## Target architecture
 
-- Next.js frontend: a Node-compatible host or Vercel.
-- Laravel API: PHP 8.3+ compatible host/VPS with current supported patch releases; web root `backend/public`.
-- MySQL 8: managed or privately networked service with backups.
-- SMTP: configure and test verification/recovery/invitation delivery.
-- Redis is optional. Database cache/queue defaults are provided.
+```text
+Browser ──HTTPS──> Vercel (Next.js, frontend/)
+                     │  rewrites /api/* and /sanctum/* (server side)
+                     ▼
+                   Laravel host (backend/, PHP 8.4) ──TLS──> Managed MySQL 8
+                     └── SMTP provider (verification, reset, invitations)
+```
 
-Do not assume a Next.js frontend deployment hosts a persistent PHP process.
+The browser only ever talks to the Vercel domain. Next.js rewrites proxy `/api` and `/sanctum` to Laravel, so Sanctum session and XSRF cookies are first-party on the Vercel host: no cross-site cookies, no credentialed CORS, `SESSION_DOMAIN=null`.
 
-## Laravel release
+## Recommended providers (decision for the owner)
 
-Install dependencies with `composer install --no-dev --prefer-dist --optimize-autoloader`. Supply environment variables through the host secret manager. Set `APP_ENV=production`, `APP_DEBUG=false`, a stable generated `APP_KEY`, database credentials, and HTTPS URLs. Run `php artisan migrate --force` after a verified backup. Cache configuration/routes/views using `php artisan optimize`. Keep storage/framework, storage/logs and bootstrap/cache writable by the application user, not globally writable.
+| Layer | Recommendation | Why | Cost note |
+|---|---|---|---|
+| Source | Private GitHub repository | Vercel and Laravel hosts deploy from it; CI in `.github/workflows/ci.yml` | Free for private repos |
+| Frontend | Vercel, root directory `frontend` | Next.js native, automatic preview per branch/PR | Hobby is free but for non-commercial use; a commercial launch needs Pro. Confirm current terms. |
+| Backend | Laravel Cloud (alternatives: Forge + VPS, Railway) | Built for Laravel: PHP 8.4, queues, scheduler, Git deploys, preview environments | Paid usage; check current pricing before approval |
+| Database | The Laravel host's managed MySQL 8 (or PlanetScale/Aiven MySQL) | Persistent, backups, private networking | Paid; enable automated backups |
+| Email | SMTP from Resend, Postmark, Brevo or Mailgun | Uses Laravel's built-in `smtp` mailer, no new dependency | Free tiers exist; needs a domain with SPF/DKIM |
+| Domain | Optional for the preview (`*.vercel.app` works) | A custom domain is needed for branded email sending | Registrar fee |
 
-Never expose `.env`, vendor, storage or the repository root. Serve only public assets from `public`. Keep the local demo seeder disabled outside local/testing. Do not enable debug tooling in production.
+Vercel alone cannot host the Laravel API, its database or queue workers.
 
-## Next.js release
+## Step by step (each step: owner approval first)
 
-From `frontend`, run `npm ci`, `npm run typecheck`, `npm run lint`, and `npm run build`. On a Node host start with `npm run start`. Set API environment values at the appropriate build/runtime stage. All fonts are bundled locally through npm.
+1. **GitHub:** create a *private* repository, add it as `origin`, push `main`. Branch protection on `main`: require the CI workflow.
+2. **Database:** create a production MySQL 8 database and a user restricted to it. Never reuse or copy the local development database or its test accounts.
+3. **Laravel host:** connect the repository, application root `backend/`, PHP 8.4. Set the variables from `backend/.env.production.example` in the secret manager. Deploy commands: `composer install --no-dev --optimize-autoloader`, `php artisan migrate --force` (fresh database only; take a backup first on any later release), `php artisan optimize`. Never run `migrate:fresh` or seeders in production; the demo seeder refuses to run outside local/testing.
+4. **Email:** verify the sending domain with the SMTP provider; set `MAIL_*`. Test registration → verification → login and password reset end to end before inviting anyone.
+5. **Vercel:** import the repository, root directory `frontend`, framework Next.js (build command `npm run build`). Variables from `frontend/.env.production.example`: `NEXT_PUBLIC_DEPLOY_STAGE=preview` (shows the "Development preview" banner and sets `noindex`), `API_INTERNAL_URL=<Laravel URL>`.
+6. **Connect the two:** set `FRONTEND_URL` and `SANCTUM_STATEFUL_DOMAINS` on Laravel to the stable Vercel host (for example `sayntra-preview.vercel.app`). Set `TRUSTED_PROXIES` to the host's load-balancer ranges so HTTPS and client IPs are detected.
+7. **Verify on the deployed URLs:** registration, email verification link, login/logout, CSRF, a customer → device → repair → diagnosis flow, Arabic/English, light/dark, 3D fallback. Run the Playwright suite against the preview with `E2E_BASE_URL`.
 
-## First-party Sanctum domains
+## Continuous delivery
 
-Recommended sibling domains: `app.example.com` for Next and `api.example.com` for Laravel, both HTTPS.
+- `ci.yml` runs on every push/PR: frontend typecheck, lint and production build; backend PHPUnit against a throwaway MySQL 8.4 service container.
+- Vercel creates a preview deployment for every branch/PR automatically. Production releases only from `main` after CI passes and the owner approves.
+- Per-branch Vercel preview URLs change each time. Only the stable preview host is listed in `SANCTUM_STATEFUL_DOMAINS`; sign-in on ad-hoc preview URLs is intentionally not enabled.
 
-- Backend: `APP_URL=https://api.example.com`, `FRONTEND_URL=https://app.example.com`.
-- `SANCTUM_STATEFUL_DOMAINS=app.example.com,api.example.com` (hostnames, no schemes).
-- `SESSION_DOMAIN=.example.com`, `SESSION_SECURE_COOKIE=true`, HttpOnly session cookie, SameSite=Lax.
-- Frontend: `NEXT_PUBLIC_API_URL=https://api.example.com`; configure `API_INTERNAL_URL` for any server-side rewrites used.
-- CORS allows only the configured frontend origin with credentials. Do not use wildcard credentialed CORS.
-- Browser requests include credentials; the XSRF cookie is intentionally readable, while the actual session cookie is HttpOnly.
+## Security checklist before sharing the preview
 
-For a reverse-proxy deployment using the default same-origin `/api` rewrite, adjust cookie host/domain and stateful hostnames for the public application host. Verify forwarded cookies and headers. Do not mix unrelated frontend/API domains without redesigning the session configuration.
+- `APP_DEBUG=false`, `APP_ENV=production`, unique `APP_KEY` backed up securely.
+- `SESSION_SECURE_COOKIE=true`, `SESSION_ENCRYPT=true`, HTTPS only.
+- `TRUSTED_PROXIES` set to the provider's ranges, not `*`, unless the API is reachable only through them. Login/registration throttles use the client IP; a spoofable `X-Forwarded-For` would weaken them.
+- Database user limited to the SAYNTRA database; automated backups on; a restore rehearsed once.
+- No real customer data while the banner says "Development preview".
+- Rotate any credential that was ever shared in chat or stored outside a secret manager.
 
-## Processes and monitoring
+## Rollback
 
-Current mail notifications are synchronous; queues are configured for future jobs. When jobs are introduced, use supervised `php artisan queue:work --tries=3 --timeout=90` workers and restart them on release (`queue:restart`). Run `php artisan schedule:run` every minute when scheduled tasks exist. Reverb is not installed/enabled in this checkpoint.
-
-Monitor `/api/v1/health`, application error rates, database availability, mail failures and login failures. Do not log passwords, cookies, reset/invitation URLs or customer notes in operational monitoring. Local mail logs contain sensitive capability links: restrict their access and retention.
-
-Back up MySQL and any future private storage, encrypt backups and test restores. Keep APP_KEY backed up securely. Prefer additive migrations; code rollback does not automatically undo data changes. Stop writes and restore a tested backup when data migration rollback is required.
-
-## Release gates still required
-
-Finish the remaining lifecycle modules, test concurrency and all tenant boundaries for new entities, validate actual SMTP, perform accessibility and responsive review, and verify the deployed application before accepting real customer data.
+- Frontend: promote the previous Vercel deployment (instant).
+- Backend: redeploy the previous commit. Migrations are additive; code rollback does not undo data changes, so restore the pre-release backup if a data migration must be reverted.

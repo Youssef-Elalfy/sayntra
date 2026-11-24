@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,11 +14,14 @@ import {
   LogOut,
   Menu,
   X,
-  Command,
+  FlaskConical,
+  RotateCcw,
 } from "lucide-react";
 import { api, post, ApiError } from "@/lib/api";
 import { Logo, Preferences } from "./brand";
 import { usePreferences } from "./providers";
+import { DEMO_BUILD, endDemo, isDemoSession, resetDemo } from "@/lib/demo";
+import { roleLabels } from "@/features/operations/shared";
 export type Organization = {
   id: number;
   name: string;
@@ -58,12 +61,17 @@ export const navigation = [
   ["settings", "Settings", "الإعدادات", Settings, ""],
 ] as const;
 export default function Workspace({ children }: { children: React.ReactNode }) {
-  const { t } = usePreferences();
+  const { t, language } = usePreferences();
   const router = useRouter();
   const path = usePathname();
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const demo = DEMO_BUILD || isDemoSession();
+  // Demo data is localized when read: refresh it when the language changes.
+  useEffect(() => {
+    if (DEMO_BUILD || isDemoSession()) client.invalidateQueries();
+  }, [language, client]);
   const user = useQuery({
     queryKey: ["user"],
     queryFn: () => api<{ data: CurrentUser }>("/auth/user"),
@@ -189,48 +197,82 @@ export default function Workspace({ children }: { children: React.ReactNode }) {
                 >
                   <Icon size={18} />
                   <span>{t(en, ar)}</span>
-                  {route === "repairs" && (
-                    <span className="nav-shortcut">↗</span>
-                  )}
                 </Link>
               ))}
           </nav>
           <div className="sidebar-bottom">
-            <div className="workspace-note">
-              <Command size={21} />
-              <strong>{t("Everything, connected.", "كل شغلك، مترابط.")}</strong>
-              <p>
-                {t(
-                  "A little more clarity in every day.",
-                  "تفاصيل أوضح في كل يوم.",
-                )}
-              </p>
-            </div>
-            <button
-              className="profile-button"
-              onClick={async () => {
-                try {
-                  await post("/auth/logout", {});
-                  client.clear();
-                  router.replace("/login");
-                  router.refresh();
-                } catch {
-                  setLogoutError(
-                    t(
-                      "Could not sign out. Try again.",
-                      "تعذر تسجيل الخروج. حاول مجددًا.",
-                    ),
-                  );
+            {demo && (
+              <div className="demo-card" role="note">
+                <FlaskConical size={18} aria-hidden="true" />
+                <strong>{t("Portfolio demo", "عرض تجريبي للأعمال")}</strong>
+                <p>
+                  {t(
+                    "Fictional sample data. Changes stay in this browser only.",
+                    "بيانات مثال وهمية. التعديلات محفوظة في هذا المتصفح فقط.",
+                  )}
+                </p>
+                <button
+                  type="button"
+                  className="button secondary small"
+                  onClick={() => {
+                    resetDemo();
+                    client.invalidateQueries();
+                  }}
+                >
+                  <RotateCcw size={15} aria-hidden="true" />
+                  {t("Reset demo data", "إعادة ضبط البيانات")}
+                </button>
+              </div>
+            )}
+            <div className="profile-row">
+              <Link
+                href="/app/settings"
+                className="profile-link"
+                onClick={() => setOpen(false)}
+              >
+                <span className="avatar" aria-hidden="true">
+                  {user.data.data.name.slice(0, 1)}
+                </span>
+                <span>
+                  <strong>{user.data.data.name}</strong>
+                  <small>
+                    {t(...(roleLabels[org.data.role] ?? ["Member", "عضو"]))}
+                  </small>
+                </span>
+              </Link>
+              <button
+                type="button"
+                className="icon-button signout-button"
+                aria-label={
+                  demo
+                    ? t("Exit demo", "الخروج من العرض")
+                    : t("Sign out", "تسجيل الخروج")
                 }
-              }}
-            >
-              <span className="avatar">{user.data.data.name.slice(0, 1)}</span>
-              <span>
-                <strong>{user.data.data.name}</strong>
-                <small>{t("Sign out", "تسجيل الخروج")}</small>
-              </span>
-              <LogOut size={17} />
-            </button>
+                title={
+                  demo
+                    ? t("Exit demo", "الخروج من العرض")
+                    : t("Sign out", "تسجيل الخروج")
+                }
+                onClick={async () => {
+                  try {
+                    await post("/auth/logout", {});
+                    if (demo) endDemo();
+                    client.clear();
+                    router.replace(demo ? "/" : "/login");
+                    router.refresh();
+                  } catch {
+                    setLogoutError(
+                      t(
+                        "Could not sign out. Try again.",
+                        "تعذر تسجيل الخروج. حاول مجددًا.",
+                      ),
+                    );
+                  }
+                }}
+              >
+                <LogOut size={17} className="directional" aria-hidden="true" />
+              </button>
+            </div>
             {logoutError && <p role="alert">{logoutError}</p>}
           </div>
         </aside>
@@ -252,9 +294,13 @@ export default function Workspace({ children }: { children: React.ReactNode }) {
             </div>
             <div className="row header-actions">
               <Preferences />
-              <span className="avatar small-avatar">
+              <Link
+                href="/app/settings"
+                className="avatar small-avatar"
+                aria-label={t("Your profile and settings", "ملفك والإعدادات")}
+              >
                 {user.data.data.name.slice(0, 1)}
-              </span>
+              </Link>
             </div>
           </header>
           <motion.main

@@ -19,7 +19,7 @@ import {
   Refrigerator,
   CircleCheck,
   LayoutDashboard,
-  ChevronRight,
+  ChevronDown,
   Globe2,
   Layers3,
 } from "lucide-react";
@@ -27,6 +27,10 @@ import { Logo, Preferences, LivingNetwork } from "@/components/brand";
 import { usePreferences } from "@/components/providers";
 import { HeroDevice, RepairStory } from "./repair-story";
 import { AmbientBackdrop } from "./ambient";
+import { DEMO_BUILD } from "@/lib/demo";
+
+/** On the public portfolio build every "start" action opens the live demo. */
+const startHref = DEMO_BUILD ? "/demo" : "/register";
 const sections = [
   ["features", "Features", "المميزات"],
   ["how-it-works", "How it works", "كيف تعمل"],
@@ -283,21 +287,36 @@ export default function Landing() {
               </a>
             ))}
             <div className="mobile-nav-actions">
-              <Link className="button secondary" href="/login">
-                {t("Log in", "دخول")}
-              </Link>
-              <Link className="button" href="/register">
-                {t("Get started", "ابدأ الآن")}
-              </Link>
+              {DEMO_BUILD ? (
+                <Link className="button" href="/demo">
+                  {t("Explore live demo", "جرّب العرض الحي")}
+                </Link>
+              ) : (
+                <>
+                  <Link className="button secondary" href="/login">
+                    {t("Log in", "دخول")}
+                  </Link>
+                  <Link className="button" href="/register">
+                    {t("Get started", "ابدأ الآن")}
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
           <div className="row nav-actions">
             <Preferences />
-            <Link className="login-link" href="/login">
-              {t("Log in", "دخول")}
-            </Link>
-            <Link className="button small" href="/register">
-              {t("Get started", "ابدأ الآن")}
+            {!DEMO_BUILD && (
+              <Link className="login-link" href="/login">
+                {t("Log in", "دخول")}
+              </Link>
+            )}
+            <Link
+              className="button small"
+              href={DEMO_BUILD ? "/demo" : "/register"}
+            >
+              {DEMO_BUILD
+                ? t("Live demo", "العرض الحي")
+                : t("Get started", "ابدأ الآن")}
               <ArrowUpRight size={16} />
             </Link>
             <button
@@ -341,19 +360,30 @@ export default function Landing() {
                 )}
               </p>
               <div className="hero-actions">
-                <Link className="button" href="/register">
-                  {t("Build your workspace", "ابدأ مساحة عملك")}
+                <Link className="button" href="/demo">
+                  {t("Explore live demo", "جرّب العرض الحي")}
                   <ArrowRight className="directional" size={17} />
                 </Link>
-                <a href="#features" className="button secondary">
-                  {t("Explore features", "اكتشف المميزات")}
-                </a>
+                {DEMO_BUILD ? (
+                  <a href="#features" className="button secondary">
+                    {t("Explore features", "اكتشف المميزات")}
+                  </a>
+                ) : (
+                  <Link className="button secondary" href="/register">
+                    {t("Build your workspace", "ابدأ مساحة عملك")}
+                  </Link>
+                )}
               </div>
               <p className="muted hero-note">
-                {t(
-                  "Development release · Inventory, billing and customer tracking are coming later.",
-                  "نسخة تطوير · المخزون والفواتير وتتبع العميل متاحة في مراحل لاحقة.",
-                )}
+                {DEMO_BUILD
+                  ? t(
+                      "Portfolio demo · Open the dashboard instantly with fictional sample data. No sign-up needed.",
+                      "عرض للأعمال · افتح لوحة التحكم فورًا ببيانات مثال وهمية، بدون تسجيل.",
+                    )
+                  : t(
+                      "Development release · Inventory, billing and customer tracking are coming later.",
+                      "نسخة تطوير · المخزون والفواتير وتتبع العميل متاحة في مراحل لاحقة.",
+                    )}
               </p>
               <div className="hero-promises">
                 <span>
@@ -524,8 +554,10 @@ export default function Landing() {
                 <h3>{t(stages[step][0], stages[step][1])}</h3>
                 <p>{t(stages[step][2], stages[step][3])}</p>
               </div>
-              <Link className="button secondary" href="/register">
-                {t("Make it your workflow", "ابدأ رحلتك")}
+              <Link className="button secondary" href={startHref}>
+                {DEMO_BUILD
+                  ? t("Try it in the demo", "جرّبها في العرض")
+                  : t("Make it your workflow", "ابدأ رحلتك")}
                 <ArrowUpRight size={17} />
               </Link>
             </div>
@@ -533,7 +565,7 @@ export default function Landing() {
         </section>
         <RepairStory />
         <section className="marketing-section showcase" id="solutions">
-          <div>
+          <div className="glass-panel showcase-copy">
             <span className="eyebrow">
               {t(
                 "THE BIG PICTURE, WITHOUT THE CLUTTER",
@@ -604,13 +636,20 @@ export default function Landing() {
                 )}
               </h3>
               <p>
-                {t(
-                  "SAYNTRA is in development. Create a workspace to manage customers, devices, intake and diagnosis now. Pricing will be announced before any billing starts, and no payment details are requested.",
-                  "صاينترا قيد التطوير. أنشئ مساحة عمل لإدارة العملاء والأجهزة والاستلام والتشخيص الآن. سيتم الإعلان عن الأسعار قبل بدء أي فوترة، ولا نطلب أي بيانات دفع.",
-                )}
+                {DEMO_BUILD
+                  ? t(
+                      "This public site is a portfolio demonstration with fictional data. The full product runs on Laravel and MySQL; pricing will be announced before any billing starts.",
+                      "هذا الموقع العام عرض للأعمال ببيانات وهمية. المنتج الكامل يعمل على Laravel وMySQL، وسيتم الإعلان عن الأسعار قبل بدء أي فوترة.",
+                    )
+                  : t(
+                      "SAYNTRA is in development. Create a workspace to manage customers, devices, intake and diagnosis now. Pricing will be announced before any billing starts, and no payment details are requested.",
+                      "صاينترا قيد التطوير. أنشئ مساحة عمل لإدارة العملاء والأجهزة والاستلام والتشخيص الآن. سيتم الإعلان عن الأسعار قبل بدء أي فوترة، ولا نطلب أي بيانات دفع.",
+                    )}
               </p>
-              <Link href="/register" className="button">
-                {t("Create a workspace", "أنشئ مساحة عمل")}
+              <Link href={startHref} className="button">
+                {DEMO_BUILD
+                  ? t("Explore live demo", "جرّب العرض الحي")
+                  : t("Create a workspace", "أنشئ مساحة عمل")}
                 <ArrowRight className="directional" size={17} />
               </Link>
             </div>
@@ -648,7 +687,7 @@ export default function Landing() {
           </div>
         </section>
         <section className="marketing-section faq-section" id="faq">
-          <div>
+          <div className="glass-panel faq-intro">
             <span className="eyebrow">
               {t("A LITTLE MORE CLARITY", "إجابات أوضح")}
             </span>
@@ -658,7 +697,7 @@ export default function Landing() {
               {t("Clear answers.", "وإجاباتنا واضحة.")}
             </h2>
           </div>
-          <div className="faq-list">
+          <div className="faq-list glass-panel">
             {[
               [
                 "Is SAYNTRA just for phone repairs?",
@@ -687,14 +726,22 @@ export default function Landing() {
               [
                 "How do I get started?",
                 "أبدأ إزاي؟",
-                "Create an account and business workspace, verify your email, then start adding your customers and repair records.",
-                "أنشئ حساب ومساحة عمل، وأكّد بريدك الإلكتروني، ثم أضف عملاءك وطلبات الصيانة.",
+                DEMO_BUILD
+                  ? "Select Explore live demo. The dashboard opens instantly with fictional sample data: no account, email or verification is needed, and your changes stay in your browser."
+                  : "Create an account and business workspace, verify your email, then start adding your customers and repair records.",
+                DEMO_BUILD
+                  ? "اضغط جرّب العرض الحي. تفتح لوحة التحكم فورًا ببيانات مثال وهمية، بدون حساب أو بريد أو تأكيد، وتبقى تعديلاتك في متصفحك."
+                  : "أنشئ حساب ومساحة عمل، وأكّد بريدك الإلكتروني، ثم أضف عملاءك وطلبات الصيانة.",
               ],
             ].map(([en, ar, body, bodyAr]) => (
               <details key={en}>
                 <summary>
-                  {t(en, ar)}
-                  <ChevronRight size={18} />
+                  <span>{t(en, ar)}</span>
+                  <ChevronDown
+                    size={18}
+                    aria-hidden="true"
+                    className="faq-chevron"
+                  />
                 </summary>
                 <p>{t(body, bodyAr)}</p>
               </details>
@@ -712,8 +759,10 @@ export default function Landing() {
               <br />
               {t("easier to manage.", "أسهل في إدارته.")}
             </h2>
-            <Link href="/register" className="button">
-              {t("Get started with SAYNTRA", "ابدأ مع صاينترا")}
+            <Link href={startHref} className="button">
+              {DEMO_BUILD
+                ? t("Explore the live demo", "جرّب العرض الحي")
+                : t("Get started with SAYNTRA", "ابدأ مع صاينترا")}
               <ArrowRight className="directional" size={18} />
             </Link>
           </div>
@@ -730,7 +779,11 @@ export default function Landing() {
           <a href="#features">{t("Product", "المنتج")}</a>
           <Link href="/privacy">{t("Privacy", "الخصوصية")}</Link>
           <Link href="/terms">{t("Terms", "الشروط")}</Link>
-          <Link href="/login">{t("Log in", "دخول")}</Link>
+          {DEMO_BUILD ? (
+            <Link href="/demo">{t("Live demo", "العرض الحي")}</Link>
+          ) : (
+            <Link href="/login">{t("Log in", "دخول")}</Link>
+          )}
         </div>
         <small>© {new Date().getFullYear()} SAYNTRA</small>
       </footer>

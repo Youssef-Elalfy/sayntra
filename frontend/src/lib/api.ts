@@ -1,5 +1,6 @@
 import type { Locale } from "@/components/providers";
 import { localeTag } from "./format";
+import { DEMO_BUILD, DemoError, demoRequest, isDemoSession, startDemo } from "./demo";
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -26,6 +27,17 @@ export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  // Portfolio demo: answered in the browser from fictional sample data.
+  if (typeof window !== "undefined" && (DEMO_BUILD || isDemoSession())) {
+    if (DEMO_BUILD && !isDemoSession()) startDemo();
+    try {
+      return await demoRequest<T>(path, options);
+    } catch (error) {
+      if (error instanceof DemoError)
+        throw new ApiError(error.status, error.message, error.errors);
+      throw error;
+    }
+  }
   const method = options.method || "GET";
   if (!["GET", "HEAD"].includes(method)) {
     if (!csrf)

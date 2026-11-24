@@ -4,6 +4,9 @@ const config: NextConfig = {
   // Pin tracing to this app: the repository root has its own package-lock.json.
   outputFileTracingRoot: __dirname,
   async rewrites() {
+    // The public portfolio demo has no backend: it answers API calls in the
+    // browser, so it must never proxy to a local or unreachable server.
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') return [];
     const backend = process.env.API_INTERNAL_URL || 'http://127.0.0.1:8000';
     return [ { source: '/api/:path*', destination: `${backend}/api/:path*` }, { source: '/sanctum/:path*', destination: `${backend}/sanctum/:path*` } ];
   },

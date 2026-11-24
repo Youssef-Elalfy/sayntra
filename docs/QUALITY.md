@@ -78,3 +78,15 @@ Production build (`next build` + `next start`) against the real Laravel API and 
 | `php artisan test` | **Still not runnable**: MySQL user lacks access to `sayntra_test` (see previous update) |
 
 Agent reviews actually run: `senior-ui-ux-designer` (review only) and `frontend-qa` (read-only browser QA). Their findings and what was applied are in the session report. Not verified: Safari, Firefox, physical touch devices, high-DPR GPU performance, a full WCAG audit.
+
+## Update: design tokens, 3D refinements, Git and deployment prep (5 November 2026)
+
+| Check | Result |
+|---|---|
+| `npm run typecheck`, `npm run lint`, `npm run build` | Passed |
+| Final Playwright regression (`npx playwright test`, production build, real API/MySQL, Chrome) | **38 passed, 0 failed** (5.8 min) |
+| Visual review (headless Chrome, Intel UHD 630): features bento, early-access pricing, hero, dashboard | en light/dark and ar light/dark at 1440, 768 and 390px; no horizontal overflow |
+| `php artisan test` | **Blocked:** 19 of 21 error with "access denied" on `sayntra_test` (MySQL privilege). The dev database `sayntra` is never touched: `tests/TestCase.php` refuses any database not ending in `_test`, and `phpunit.xml` now forces `DB_DATABASE=sayntra_test`. CI runs the suite against a throwaway MySQL container. |
+| Git | Repository initialised, first commit `d964252` on `main`; `.env*` (except examples), `.env.e2e.local`, `.claude/`, logs, dependencies and build output excluded; staged content scanned for secrets (none found). No remote, nothing pushed. |
+
+Agent reviews used this phase: `senior-game-developer` (3D rendering) and `senior-motion-video-producer` (motion), both review-only; their findings were implemented by the main session.

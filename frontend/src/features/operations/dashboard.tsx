@@ -134,12 +134,14 @@ export default function Dashboard() {
             <div className="stack">
               <section className="card stack">
                 <h3>{t("Repair status overview", "توزيع حالات الصيانة")}</h3>
-                {q.data.data.status_counts.map((s) => (
-                  <div className="row between" key={s.status}>
-                    <Status value={s.status} />
-                    <strong>{s.count}</strong>
-                  </div>
-                ))}
+                <ul className="status-grid">
+                  {q.data.data.status_counts.map((s) => (
+                    <li key={s.status}>
+                      <Status value={s.status} />
+                      <strong>{s.count}</strong>
+                    </li>
+                  ))}
+                </ul>
                 {!q.data.data.status_counts.length && (
                   <p>
                     {t(
@@ -153,7 +155,7 @@ export default function Dashboard() {
                 <h3>{t("Recent activity", "آخر الأنشطة")}</h3>
                 {q.data.data.activity.length ? (
                   <ol className="timeline">
-                    {q.data.data.activity.map((a) => {
+                    {q.data.data.activity.slice(0, 6).map((a) => {
                       const [en, ar] = activityLabels[a.event] ?? [
                         "Workspace update",
                         "تحديث في مساحة العمل",

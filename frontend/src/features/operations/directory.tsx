@@ -378,6 +378,12 @@ export function Directory({ resource }: { resource: Resource }) {
     </>
   );
 }
+const priorityLabels: Record<string, [string, string]> = {
+  low: ["Low", "منخفضة"],
+  normal: ["Normal", "عادية"],
+  high: ["High", "عالية"],
+  urgent: ["Urgent", "عاجلة"],
+};
 export function RecordDetail({
   resource,
   id,
@@ -469,24 +475,70 @@ export function RecordDetail({
       <div className="detail-grid">
         <section className="card stack">
           <h3>{t("Details", "التفاصيل")}</h3>
-          {r.customer && (
-            <Link
-              className="text-link"
-              href={`/app/customers/${r.customer.id}`}
-            >
-              {r.customer.name} · {r.customer.phone}
-            </Link>
-          )}
-          {r.device && (
-            <p>
-              {r.device.brand} {r.device.model}
-            </p>
-          )}
-          {r.technician && (
-            <p>
-              {t("Assigned to: ", "الفني المسؤول: ")}
-              {r.technician.name}
-            </p>
+          {(r.customer || r.device || resource === "repairs") && (
+            <dl className="detail-fields">
+              {r.customer && (
+                <div>
+                  <dt>{t("Customer", "العميل")}</dt>
+                  <dd>
+                    <Link
+                      className="text-link"
+                      href={`/app/customers/${r.customer.id}`}
+                    >
+                      {r.customer.name}
+                    </Link>
+                    <small dir="ltr">{r.customer.phone}</small>
+                  </dd>
+                </div>
+              )}
+              {r.device && (
+                <div>
+                  <dt>{t("Device", "الجهاز")}</dt>
+                  <dd>
+                    <Link
+                      className="text-link"
+                      href={`/app/devices/${r.device.id}`}
+                    >
+                      {r.device.brand} {r.device.model}
+                    </Link>
+                  </dd>
+                </div>
+              )}
+              {resource === "repairs" && (
+                <div>
+                  <dt>{t("Technician", "الفني")}</dt>
+                  <dd>
+                    {r.technician?.name ??
+                      t("Not assigned yet", "لم يُسند بعد")}
+                  </dd>
+                </div>
+              )}
+              {r.priority && (
+                <div>
+                  <dt>{t("Priority", "الأولوية")}</dt>
+                  <dd>
+                    {t(
+                      ...(priorityLabels[r.priority] ?? [
+                        r.priority,
+                        r.priority,
+                      ]),
+                    )}
+                  </dd>
+                </div>
+              )}
+              {r.received_at && (
+                <div>
+                  <dt>{t("Received", "تاريخ الاستلام")}</dt>
+                  <dd>{formatDate(r.received_at, language)}</dd>
+                </div>
+              )}
+              {r.expected_at && (
+                <div>
+                  <dt>{t("Expected", "الموعد المتوقع")}</dt>
+                  <dd>{formatDate(r.expected_at, language)}</dd>
+                </div>
+              )}
+            </dl>
           )}
           {[
             ["Email", "البريد", r.email],
@@ -502,7 +554,9 @@ export function RecordDetail({
             .map(([en, ar, value]) => (
               <div key={en}>
                 <small className="muted">{t(en!, ar!)}</small>
-                <p className="preserve">{value}</p>
+                <p className="preserve" dir="auto">
+                  {value}
+                </p>
               </div>
             ))}
           {r.diagnoses?.map((d) => (
@@ -520,15 +574,25 @@ export function RecordDetail({
               ? t("Repair timeline", "الخط الزمني للصيانة")
               : t("Service history", "سجل الخدمة")}
           </h3>
-          {r.histories?.map((h) => (
-            <div className="list-item" key={h.id}>
-              <Status value={h.to_status} />
-              <p>{h.note}</p>
-              <small>
-                {formatDate(h.created_at, language)}
-              </small>
-            </div>
-          ))}
+          {!!r.histories?.length && (
+            <ol className="timeline repair-timeline">
+              {r.histories.map((h) => (
+                <li key={h.id}>
+                  <span className="timeline-dot" aria-hidden="true" />
+                  <div>
+                    <Status value={h.to_status} />
+                    <time dateTime={h.created_at}>
+                      {formatDate(h.created_at, language, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </time>
+                    {h.note && <p dir="auto">{h.note}</p>}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
           {r.repairs?.map((order) => (
             <Link
               className="list-item"
